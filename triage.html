@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Triage</title>
+  <link rel="icon" href="icons/icon.svg">
+  <link rel="stylesheet" href="triage.css">
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Triage</h1>
+      <span id="pending-count" class="header-count"></span>
+      <div class="filter" id="filter">
+        <button type="button" id="filter-btn" class="filter-btn" aria-haspopup="menu" aria-expanded="false" title="Filtrar por contexto">
+          <span class="ctx-icons" id="filter-dot"><i class="icon ctx-work" data-icon="briefcase"></i><i class="icon ctx-personal" data-icon="house"></i></span>
+          <span id="filter-label">Todo</span>
+          <i class="icon chevron" data-icon="chevron-down"></i>
+        </button>
+        <div id="filter-menu" class="menu" role="menu" hidden>
+          <button type="button" role="menuitemradio" data-value="all">
+            <i class="icon menu-lead" data-icon="layers"></i><span class="menu-label">Todo</span>
+            <span class="menu-count"></span><i class="icon menu-check" data-icon="check"></i>
+          </button>
+          <button type="button" role="menuitemradio" data-value="work">
+            <i class="icon menu-lead ctx-work" data-icon="briefcase"></i><span class="menu-label">Work</span>
+            <span class="menu-count"></span><i class="icon menu-check" data-icon="check"></i>
+          </button>
+          <button type="button" role="menuitemradio" data-value="personal">
+            <i class="icon menu-lead ctx-personal" data-icon="house"></i><span class="menu-label">Personal</span>
+            <span class="menu-count"></span><i class="icon menu-check" data-icon="check"></i>
+          </button>
+          <div class="menu-sep" role="separator"></div>
+          <button type="button" role="menuitem" data-action="containers">
+            <i class="icon menu-lead" data-icon="settings-2"></i><span class="menu-label">Containers…</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <form id="add-form" autocomplete="off">
+      <input id="new-task" type="text" placeholder="¿Qué hay que resolver?" autofocus>
+    </form>
+
+    <section id="next-section" hidden>
+      <h2>Siguiente</h2>
+      <ul id="next" class="list"></ul>
+    </section>
+
+    <section id="queue-section" hidden>
+      <h2>En cola <span id="queue-count"></span></h2>
+      <ul id="queue" class="list"></ul>
+    </section>
+
+    <p id="empty" class="empty" hidden><i class="icon empty-icon" data-icon="inbox"></i><span id="empty-text"></span></p>
+
+    <section id="done-section" hidden>
+      <div class="done-header">
+        <h2><button type="button" id="done-toggle" class="done-toggle" aria-expanded="false" aria-controls="done"><i class="icon" data-icon="chevron-down"></i>Resueltas <span id="done-count"></span></button></h2>
+        <button id="clear-done" type="button" class="link">Limpiar</button>
+      </div>
+      <ul id="done" class="list" hidden></ul>
+    </section>
+
+    <footer class="muted">
+      <kbd>/</kbd> o <kbd>n</kbd> nueva tarea ·
+      <kbd>título // descripción</kbd> ·
+      <kbd>!</kbd> al principio la pone primera ·
+      <kbd>@w</kbd> / <kbd>@p</kbd> Work o Personal ·
+      arrastrá <kbd><i class="icon" data-icon="grip-vertical"></i></kbd> para reordenar ·
+      doble click para editar
+    </footer>
+  </main>
+
+  <template id="task-template">
+    <li class="task">
+      <span class="handle" title="Arrastrar para reordenar"><i class="icon" data-icon="grip-vertical"></i></span>
+      <input type="checkbox" class="toggle" aria-label="Marcar como resuelta">
+      <div class="body">
+        <div class="line">
+          <span class="text"></span>
+          <span class="age"></span>
+        </div>
+        <div class="note" data-placeholder="Descripción…" hidden></div>
+        <div class="meta">
+          <button type="button" class="ctx-toggle ctx-icons"><i class="icon ctx-work" data-icon="briefcase"></i><i class="icon ctx-personal" data-icon="house"></i><i class="icon ctx-none" data-icon="circle-dashed"></i><span class="ctx-label"></span></button>
+          <a class="link-chip" target="_blank" rel="noopener" hidden><span class="link-host"></span></a>
+          <button type="button" class="comment-count" hidden><i class="icon" data-icon="message-circle"></i><span class="comment-n"></span></button>
+        </div>
+        <div class="comments" hidden>
+          <ul class="comment-list"></ul>
+          <form class="comment-form" autocomplete="off">
+            <input class="comment-input" type="text" placeholder="Agregar comentario…">
+          </form>
+        </div>
+        <div class="next-actions">
+          <button type="button" class="pill push-down"><i class="icon" data-icon="arrow-down"></i>Ahora no</button>
+          <button type="button" class="pill push-end"><i class="icon" data-icon="arrow-down-to-line"></i>Al final</button>
+        </div>
+      </div>
+      <div class="actions">
+        <button type="button" class="act to-top" title="Mover al principio"><i class="icon" data-icon="arrow-up-to-line"></i></button>
+        <button type="button" class="act down" title="Bajar un lugar"><i class="icon" data-icon="arrow-down"></i></button>
+        <button type="button" class="act to-end" title="Mover al final"><i class="icon" data-icon="arrow-down-to-line"></i></button>
+        <button type="button" class="act add-note" title="Agregar descripción"><i class="icon" data-icon="pencil"></i></button>
+        <button type="button" class="act open-comments" title="Comentarios"><i class="icon" data-icon="message-circle"></i></button>
+        <button type="button" class="act delete" title="Borrar"><i class="icon" data-icon="x"></i></button>
+      </div>
+    </li>
+  </template>
+
+  <dialog id="containers-dialog">
+    <form method="dialog">
+      <h2>Containers</h2>
+      <p class="muted">Las tareas que vienen de cada container se marcan con este contexto, y sus links se abren ahí.</p>
+      <ul id="container-list"></ul>
+      <p id="no-containers" class="muted" hidden>No encontré containers. ¿Están activados en Firefox?</p>
+      <div class="dialog-actions"><button class="pill" value="close">Listo</button></div>
+    </form>
+  </dialog>
+
+  <template id="comment-template">
+    <li class="comment">
+      <span class="comment-text"></span>
+      <span class="comment-age muted"></span>
+      <button type="button" class="comment-delete" title="Borrar comentario"><i class="icon" data-icon="x"></i></button>
+    </li>
+  </template>
+
+  <script src="icons.js"></script>
+  <script src="contexts.js"></script>
+  <script src="triage.js"></script>
+</body>
+</html>
