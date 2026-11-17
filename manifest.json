@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Triage",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Tareas rápidas para resolver en el momento, en la barra lateral.",
   "icons": {
     "48": "icons/icon.svg",

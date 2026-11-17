@@ -480,12 +480,18 @@ function autoScroll(y) {
 
 // ---------- Soltar páginas, links o texto desde afuera ----------
 
-const EXTERNAL_TYPES = ["text/x-moz-url", "text/uri-list", "text/plain"];
+// Al arrastrar una pestaña de la barra de pestañas, Firefox NO manda
+// text/x-moz-url ni text/plain (para no crear accesos directos si la soltás en
+// el escritorio): solo estos dos tipos, y el segundo puede llegar vacío.
+const TAB_TYPES = ["application/x-moz-tabbrowser-tab", "text/x-moz-text-internal"];
+const EXTERNAL_TYPES = ["text/x-moz-url", "text/uri-list", "text/plain", ...TAB_TYPES];
 let externalPh = null;
 
 function isExternalDrag(e) {
   return [...e.dataTransfer.types].some((t) => EXTERNAL_TYPES.includes(t));
 }
+
+const isTabDrag = (dt) => [...dt.types].some((t) => TAB_TYPES.includes(t));
 
 function clearDropUI() {
   document.body.classList.remove("drag-over");
@@ -558,11 +564,43 @@ async function openUrl(url, task = {}) {
   }
 }
 
-// Crea la tarea en la posición "index" de la cola (por defecto, al final).
-async function addFromDrop(dt, index = Infinity) {
-  let { text, url } = parseDrop(dt);
+// Pestañas arrastradas desde la barra de pestañas. Al empezar a arrastrar,
+// Firefox selecciona la pestaña, así que son las resaltadas de esta ventana
+// (varias si arrastrás una selección con Ctrl/Shift+click).
+async function draggedTabs(internalUrl) {
+  let tabs = [];
+  try {
+    tabs = await browser.tabs.query({ highlighted: true, currentWindow: true });
+  } catch {}
+  // Si Firefox sí nos pasó la URL y no coincide con la selección, manda la URL.
+  if (internalUrl && !tabs.some((t) => t.url === internalUrl)) {
+    const tab = await findOpenTab(internalUrl);
+    return tab ? [tab] : [{ url: internalUrl }];
+  }
+  return tabs.filter((t) => t.url && !t.url.startsWith("about:blank"));
+}
+
+// Lee el DataTransfer de forma sincrónica (deja de ser legible después del drop).
+function readDrop(dt) {
+  if (!isTabDrag(dt)) return { kind: "data", parsed: parseDrop(dt) };
+  let internalUrl = "";
+  try { internalUrl = clean(dt.getData("text/x-moz-text-internal").split("\n")[0]); } catch {}
+  return { kind: "tabs", internalUrl: isUrl(internalUrl) ? internalUrl : "" };
+}
+
+// Crea la(s) tarea(s) en la posición "index" de la cola (por defecto, al final).
+async function addFromDrop(drop, index = Infinity) {
+  if (drop.kind === "tabs") {
+    const tabs = await draggedTabs(drop.internalUrl);
+    tabs.forEach((tab, i) => addDropped({ url: tab.url, text: "" }, tab, index + i));
+    return;
+  }
+  const { url } = drop.parsed;
+  addDropped(drop.parsed, url ? await findOpenTab(url) : undefined, index);
+}
+
+function addDropped({ text, url }, tab, index) {
   let needsTitle = false;
-  const tab = url ? await findOpenTab(url) : undefined;
   if (!text) text = clean(tab?.title);
   if (!text && url) {
     text = prettyUrl(url);
@@ -600,7 +638,7 @@ document.addEventListener("drop", (e) => {
   const index = externalPh?.parentElement ? placeholderIndex(externalPh) : Infinity;
   document.body.classList.remove("drag-over");
   externalPh = null; // el render reemplaza el placeholder por la tarea nueva
-  addFromDrop(e.dataTransfer, index);
+  addFromDrop(readDrop(e.dataTransfer), index);
 });
 
 // ---------- Edición inline ----------
