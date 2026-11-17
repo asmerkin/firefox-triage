@@ -61,6 +61,20 @@ Para actualizar, subí `"version"` en `manifest.json`, firmá de nuevo e instal�
 
 Requiere Firefox 140 o más nuevo.
 
+### Con GitHub Actions
+
+El workflow `.github/workflows/release.yml` hace lo mismo en GitHub: firma la extensión y publica el `.xpi` en un Release.
+
+1. Una sola vez: cargá las claves de AMO como secretos del repo (`AMO_API_KEY` y `AMO_API_SECRET`).
+2. Subí `"version"` en `manifest.json` y commiteá.
+3. Creá y pusheá el tag con esa versión:
+
+   ```bash
+   git tag v0.1.3 && git push origin main v0.1.3
+   ```
+
+Si el tag no coincide con la versión del manifest, el workflow falla antes de firmar.
+
 ## Datos
 
 Todo se guarda en `browser.storage.local`, en tu perfil de Firefox. Nada sale de tu máquina.

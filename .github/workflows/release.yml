@@ -1,0 +1,48 @@
+# Firma la extensión en AMO (unlisted) y publica el .xpi en un Release.
+# Se dispara al pushear un tag vX.Y.Z que coincida con "version" del manifest:
+#   git tag v0.1.3 && git push origin v0.1.3
+# Requiere los secretos AMO_API_KEY y AMO_API_SECRET en el repo.
+
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  sign:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: El tag coincide con la versión del manifest
+        run: |
+          version=$(jq -r .version manifest.json)
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::El tag $GITHUB_REF_NAME no coincide con la versión $version de manifest.json"
+            exit 1
+          fi
+
+      - name: Lint
+        run: npx --yes web-ext lint --self-hosted
+
+      - name: Firmar en AMO
+        run: npx --yes web-ext sign --channel=unlisted
+        env:
+          WEB_EXT_API_KEY: ${{ secrets.AMO_API_KEY }}
+          WEB_EXT_API_SECRET: ${{ secrets.AMO_API_SECRET }}
+
+      - name: Crear Release
+        run: |
+          xpi=$(ls web-ext-artifacts/*.xpi)
+          cp "$xpi" "triage-${GITHUB_REF_NAME#v}.xpi"
+          gh release create "$GITHUB_REF_NAME" "triage-${GITHUB_REF_NAME#v}.xpi" --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
