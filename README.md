@@ -75,6 +75,14 @@ El workflow `.github/workflows/release.yml` hace lo mismo en GitHub: firma la ex
 
 Si el tag no coincide con la versión del manifest, el workflow falla antes de firmar.
 
+AMO no firma dos veces la misma versión: si firmaste una a mano, la próxima tiene que ser más nueva.
+
+### Actualización automática
+
+Desde la 0.1.3, Firefox actualiza la extensión sola. El manifest tiene un `update_url` que apunta a `updates.json` en la rama `updates`, y el workflow reescribe ese archivo en cada Release con la versión nueva y el link al `.xpi`.
+
+Firefox lo revisa una vez por día. Para forzarlo, en `about:addons` andá al engranaje y elegí **Check for Updates**.
+
 ## Datos
 
 Todo se guarda en `browser.storage.local`, en tu perfil de Firefox. Nada sale de tu máquina.

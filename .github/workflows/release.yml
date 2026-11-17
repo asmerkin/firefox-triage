@@ -46,3 +46,24 @@ jobs:
           gh release create "$GITHUB_REF_NAME" "triage-${GITHUB_REF_NAME#v}.xpi" --generate-notes
         env:
           GH_TOKEN: ${{ github.token }}
+
+      # Firefox consulta este archivo (update_url del manifest) para actualizar
+      # la extensión sola. Vive en la rama "updates", que se reescribe entera.
+      - name: Publicar updates.json
+        run: |
+          version=${GITHUB_REF_NAME#v}
+          xpi="triage-$version.xpi"
+          id=$(jq -r .browser_specific_settings.gecko.id manifest.json)
+          hash="sha256:$(sha256sum "$xpi" | cut -d' ' -f1)"
+          link="https://github.com/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME/$xpi"
+          mkdir pub && cd pub
+          git init -q -b updates
+          jq -n --arg id "$id" --arg v "$version" --arg link "$link" --arg hash "$hash" \
+            '{addons: {($id): {updates: [{version: $v, update_link: $link, update_hash: $hash}]}}}' > updates.json
+          cat updates.json
+          git add updates.json
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -q -m "updates.json para $version"
+          git push -f "https://x-access-token:${GH_TOKEN}@github.com/$GITHUB_REPOSITORY.git" updates
+        env:
+          GH_TOKEN: ${{ github.token }}

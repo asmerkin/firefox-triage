@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Triage",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Tareas rápidas para resolver en el momento, en la barra lateral.",
   "icons": {
     "48": "icons/icon.svg",
@@ -30,6 +30,7 @@
   "browser_specific_settings": {
     "gecko": {
       "id": "triage@asmerkin.local",
+      "update_url": "https://raw.githubusercontent.com/asmerkin/firefox-triage/updates/updates.json",
       "strict_min_version": "140.0",
       "data_collection_permissions": { "required": ["none"] }
     },
