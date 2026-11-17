@@ -1,0 +1,13 @@
+{
+  "addons": {
+    "triage@asmerkin.local": {
+      "updates": [
+        {
+          "version": "0.1.3",
+          "update_link": "https://github.com/asmerkin/firefox-triage/releases/download/v0.1.3/triage-0.1.3.xpi",
+          "update_hash": "sha256:9fdd0c960b403514a3ab50cccbde1481c017dbdb57f84a5ee4294024508814fc"
+        }
+      ]
+    }
+  }
+}
